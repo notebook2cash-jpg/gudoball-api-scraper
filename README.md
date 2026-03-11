@@ -32,6 +32,14 @@ uvicorn app.main:app --reload
 
 > ถ้าตั้ง `REFRESH_TOKEN` เป็น environment variable ระบบจะตรวจ token ตอนเรียก refresh
 
+### รูปแบบข้อมูล section 1 (ล่าสุด)
+
+แต่ละรายการใน `section_1_analysis_today` จะมี:
+
+- `title` ชื่อบทวิเคราะห์
+- `content` เนื้อหาที่ดึงจากหน้าบทวิเคราะห์
+- `team_icons` ลิงก์รูปทีม (ปกติ 2 รูป)
+
 ## GitHub Actions Schedule
 
 ไฟล์ workflow: `.github/workflows/scrape.yml`

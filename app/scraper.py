@@ -102,8 +102,57 @@ def _collect_between(start: Tag, stop: Optional[Tag]) -> list[Tag]:
     return blocks
 
 
-def _parse_analysis_articles(soup: BeautifulSoup) -> list[dict[str, str]]:
-    records: list[dict[str, str]] = []
+def _extract_analysis_detail(article_url: str) -> dict[str, Any]:
+    response = requests.get(article_url, timeout=30)
+    response.raise_for_status()
+    page = BeautifulSoup(response.text, "html.parser")
+    article = page.find("article")
+    if article is None:
+        article = page.body
+    if article is None:
+        return {"content": "", "team_icons": []}
+
+    content_lines: list[str] = []
+    for node in article.find_all(["h2", "h3", "h4", "p", "li"]):
+        text = _clean_text(node.get_text(" ", strip=True))
+        if not text:
+            continue
+        content_lines.append(text)
+
+    # Remove repeated lines while preserving order.
+    deduped_lines: list[str] = []
+    seen: set[str] = set()
+    for line in content_lines:
+        if line in seen:
+            continue
+        seen.add(line)
+        deduped_lines.append(line)
+
+    all_images: list[str] = []
+    for img in article.find_all("img"):
+        src = img.get("src")
+        if not src:
+            continue
+        all_images.append(requests.compat.urljoin(article_url, src))
+
+    team_icons = [
+        img
+        for img in all_images
+        if "uefa" not in img.lower()
+        and "champions_league" not in img.lower()
+        and "premier-league" not in img.lower()
+    ]
+    if len(team_icons) < 2:
+        team_icons = all_images
+
+    return {
+        "content": "\n".join(deduped_lines),
+        "team_icons": team_icons[:2],
+    }
+
+
+def _parse_analysis_articles(soup: BeautifulSoup) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
     seen_titles: set[str] = set()
     for link in soup.find_all("a", href=True):
         title = _clean_text(link.get_text(" ", strip=True))
@@ -115,10 +164,13 @@ def _parse_analysis_articles(soup: BeautifulSoup) -> list[dict[str, str]]:
         if title in seen_titles:
             continue
         seen_titles.add(title)
+        article_url = requests.compat.urljoin(SOURCE_URL, link["href"])
+        detail = _extract_analysis_detail(article_url)
         records.append(
             {
                 "title": title,
-                "url": requests.compat.urljoin(SOURCE_URL, link["href"]),
+                "content": detail["content"],
+                "team_icons": detail["team_icons"],
             }
         )
     return records
