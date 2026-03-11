@@ -1,0 +1,5 @@
+beautifulsoup4
+fastapi
+python-dateutil
+requests
+uvicorn
