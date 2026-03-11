@@ -102,6 +102,56 @@ def _collect_between(start: Tag, stop: Optional[Tag]) -> list[Tag]:
     return blocks
 
 
+def _table_to_matrix(table: Tag) -> list[list[str]]:
+    rows = table.find_all("tr")
+    if not rows:
+        return []
+
+    header_cells = rows[0].find_all(["th", "td"])
+    expected_cols = max(len(header_cells), 1)
+    matrix: list[list[str]] = []
+    rowspans: dict[int, dict[str, Any]] = {}
+
+    for row in rows:
+        row_values: list[str] = []
+        cells = row.find_all(["th", "td"])
+        cell_idx = 0
+        col_idx = 0
+
+        while col_idx < expected_cols:
+            span = rowspans.get(col_idx)
+            if span:
+                row_values.append(span["text"])
+                span["remaining"] -= 1
+                if span["remaining"] <= 0:
+                    rowspans.pop(col_idx, None)
+                col_idx += 1
+                continue
+
+            if cell_idx >= len(cells):
+                row_values.append("")
+                col_idx += 1
+                continue
+
+            cell = cells[cell_idx]
+            cell_idx += 1
+            value = _clean_text(cell.get_text(" ", strip=True))
+            colspan = int(cell.get("colspan", 1))
+            rowspan = int(cell.get("rowspan", 1))
+
+            for _ in range(colspan):
+                if col_idx >= expected_cols:
+                    break
+                row_values.append(value)
+                if rowspan > 1:
+                    rowspans[col_idx] = {"text": value, "remaining": rowspan - 1}
+                col_idx += 1
+
+        matrix.append(row_values)
+
+    return matrix
+
+
 def _extract_analysis_detail(article_url: str) -> dict[str, Any]:
     response = requests.get(article_url, timeout=30)
     response.raise_for_status()
@@ -176,33 +226,73 @@ def _parse_analysis_articles(soup: BeautifulSoup) -> list[dict[str, Any]]:
     return records
 
 
-def _parse_tips_section(soup: BeautifulSoup) -> list[dict[str, Any]]:
+def _parse_tips_rows(table: Tag) -> list[dict[str, str]]:
+    matrix = _table_to_matrix(table)
+    if not matrix:
+        return []
+
+    headers = matrix[0]
+    if len(headers) < 2:
+        return []
+
+    row_label_key = "ประเภท"
+    expert_headers = headers[1:]
+    parsed_rows: list[dict[str, str]] = []
+
+    for row in matrix[1:]:
+        if not any(row):
+            continue
+        item: dict[str, str] = {row_label_key: row[0]}
+        for idx, expert in enumerate(expert_headers, start=1):
+            if idx < len(row) and row[idx]:
+                item[expert] = row[idx]
+        parsed_rows.append(item)
+
+    return parsed_rows
+
+
+def _parse_date_ddmmyyyy(label: str) -> datetime:
+    m = re.search(r"(\d{2})-(\d{2})-(\d{4})", label)
+    if not m:
+        return datetime.min
+    day, month, year = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    try:
+        return datetime(year, month, day)
+    except ValueError:
+        return datetime.min
+
+
+def _parse_tips_section(soup: BeautifulSoup) -> dict[str, Any]:
     tips_heading = _find_heading(soup, "ทีเด็ดบอลเต็ง บอลชุด")
     if not tips_heading:
-        return []
-    stop = _next_heading(tips_heading)
-    blocks = _collect_between(tips_heading, stop)
+        return {"current": {"label": "", "rows": []}, "previous": {"label": "", "rows": []}}
 
     date_pattern = re.compile(r"ทีเด็ดบอล วันที่\s*\d{2}-\d{2}-\d{4}")
-    date_labels: list[str] = []
-    tables: list[Tag] = []
+    entries: list[dict[str, Any]] = []
 
-    for block in blocks:
-        text = _clean_text(block.get_text(" ", strip=True))
-        if date_pattern.search(text):
-            date_labels.append(date_pattern.search(text).group(0))
-        if block.name == "table":
-            tables.append(block)
+    for sib in tips_heading.next_siblings:
+        if not isinstance(sib, Tag):
+            continue
+        if re.match(r"^h[1-6]$", sib.name or ""):
+            break
 
-    result: list[dict[str, Any]] = []
-    for idx, table in enumerate(tables):
-        result.append(
+        text = _clean_text(sib.get_text(" ", strip=True))
+        date_match = date_pattern.search(text)
+        table = sib.find("table")
+        if not date_match or table is None:
+            continue
+
+        entries.append(
             {
-                "label": date_labels[idx] if idx < len(date_labels) else f"tips_table_{idx + 1}",
-                "rows": _parse_table(table),
+                "label": date_match.group(0),
+                "rows": _parse_tips_rows(table),
             }
         )
-    return result
+
+    entries.sort(key=lambda item: _parse_date_ddmmyyyy(item["label"]), reverse=True)
+    current = entries[0] if len(entries) > 0 else {"label": "", "rows": []}
+    previous = entries[1] if len(entries) > 1 else {"label": "", "rows": []}
+    return {"current": current, "previous": previous}
 
 
 def _parse_opinion_sections(soup: BeautifulSoup) -> Tuple[dict[str, Any], dict[str, Any]]:
