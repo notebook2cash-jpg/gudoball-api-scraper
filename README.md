@@ -41,6 +41,13 @@ uvicorn app.main:app --reload
 - `team_icons` ลิงก์รูปทีม (ปกติ 2 รูป)
 - `teams` ชื่อทีม (ปกติ 2 ทีม: เหย้า/เยือน)
 
+### รูปแบบข้อมูล flag ความถูกต้อง
+
+- ใน `section_2_tips_combo.current.rows[]` และ `section_2_tips_combo.previous.rows[]` มี `is_correct`
+  - `true` เมื่อแถวมีสัญลักษณ์/คลาสที่เว็บใช้แทนผลทำนายถูก
+- ใน `section_3_opinion_today.rows[]` และ `section_4_opinion_previous.rows[]` มี `is_correct`
+  - `true` เมื่อแถวถูกไฮไลต์ (เช่นแถวสีดำคลาส `highlight`)
+
 ## GitHub Actions Schedule
 
 ไฟล์ workflow: `.github/workflows/scrape.yml`

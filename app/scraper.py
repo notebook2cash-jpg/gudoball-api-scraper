@@ -46,33 +46,37 @@ def _extract_date_from_heading(text: str) -> Optional[datetime]:
 
 
 def _parse_table(table: Tag) -> list[dict[str, Any]]:
-    rows = table.find_all("tr")
-    if not rows:
+    matrix = _table_to_matrix(table)
+    if not matrix:
         return []
-
-    headers = [_clean_text(c.get_text(" ", strip=True)) for c in rows[0].find_all(["th", "td"])]
+    headers = matrix[0]
+    row_tags = table.find_all("tr")[1:]
     data: list[dict[str, Any]] = []
     current_group = ""
 
-    for row in rows[1:]:
-        cells = row.find_all(["th", "td"])
-        values = [_clean_text(c.get_text(" ", strip=True)) for c in cells]
-        values = [v for v in values if v != ""]
-
-        if not values:
+    for row_idx, values in enumerate(matrix[1:]):
+        if not any(values):
             continue
 
-        if len(values) == 1:
-            current_group = values[0]
+        first_value = values[0] if values else ""
+        unique_values = {v for v in values if v}
+        is_group_row = first_value and (
+            all(v == "" for v in values[1:]) or (len(unique_values) == 1 and len(values) > 1)
+        )
+        if is_group_row:
+            current_group = first_value
             continue
 
         item: dict[str, Any] = {}
         if current_group:
             item["group"] = current_group
 
-        for idx, value in enumerate(values):
-            key = headers[idx] if idx < len(headers) and headers[idx] else f"col_{idx + 1}"
+        for col_idx, value in enumerate(values):
+            key = headers[col_idx] if col_idx < len(headers) and headers[col_idx] else f"col_{col_idx + 1}"
             item[key] = value
+
+        row_tag = row_tags[row_idx] if row_idx < len(row_tags) else None
+        item["is_correct"] = _is_correct_row(row_tag) if row_tag is not None else False
         data.append(item)
 
     return data
@@ -150,6 +154,25 @@ def _table_to_matrix(table: Tag) -> list[list[str]]:
         matrix.append(row_values)
 
     return matrix
+
+
+def _is_correct_row(row: Optional[Tag]) -> bool:
+    if row is None:
+        return False
+
+    classes = [c.lower() for c in (row.get("class") or [])]
+    if any(c in {"highlight", "correct", "win"} for c in classes):
+        return True
+
+    icon = row.select_one(".fa-check, .fa-check-circle, .glyphicon-ok, .icon-check")
+    if icon is not None:
+        return True
+
+    if row.find(attrs={"class": re.compile(r"check|correct|win", re.I)}) is not None:
+        return True
+
+    row_text = row.get_text(" ", strip=True)
+    return any(mark in row_text for mark in ["✓", "✔", "☑"])
 
 
 def _extract_analysis_detail(article_url: str) -> dict[str, Any]:
@@ -248,7 +271,7 @@ def _parse_analysis_articles(soup: BeautifulSoup) -> list[dict[str, Any]]:
     return records
 
 
-def _parse_tips_rows(table: Tag) -> list[dict[str, str]]:
+def _parse_tips_rows(table: Tag) -> list[dict[str, Any]]:
     matrix = _table_to_matrix(table)
     if not matrix:
         return []
@@ -259,15 +282,18 @@ def _parse_tips_rows(table: Tag) -> list[dict[str, str]]:
 
     row_label_key = "ประเภท"
     expert_headers = headers[1:]
-    parsed_rows: list[dict[str, str]] = []
+    parsed_rows: list[dict[str, Any]] = []
 
-    for row in matrix[1:]:
+    row_tags = table.find_all("tr")[1:]
+    for row_idx, row in enumerate(matrix[1:]):
         if not any(row):
             continue
-        item: dict[str, str] = {row_label_key: row[0]}
-        for idx, expert in enumerate(expert_headers, start=1):
-            if idx < len(row) and row[idx]:
-                item[expert] = row[idx]
+        item: dict[str, Any] = {row_label_key: row[0]}
+        for col_idx, expert in enumerate(expert_headers, start=1):
+            if col_idx < len(row) and row[col_idx]:
+                item[expert] = row[col_idx]
+        row_tag = row_tags[row_idx] if row_idx < len(row_tags) else None
+        item["is_correct"] = _is_correct_row(row_tag)
         parsed_rows.append(item)
 
     return parsed_rows
