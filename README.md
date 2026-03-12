@@ -39,6 +39,7 @@ uvicorn app.main:app --reload
 - `title` ชื่อบทวิเคราะห์
 - `content` เนื้อหาที่ดึงจากหน้าบทวิเคราะห์
 - `team_icons` ลิงก์รูปทีม (ปกติ 2 รูป)
+- `teams` ชื่อทีม (ปกติ 2 ทีม: เหย้า/เยือน)
 
 ## GitHub Actions Schedule
 

@@ -178,6 +178,26 @@ def _extract_analysis_detail(article_url: str) -> dict[str, Any]:
         seen.add(line)
         deduped_lines.append(line)
 
+    # Team names in these articles are commonly standalone short lines.
+    team_candidates: list[str] = []
+    for line in deduped_lines:
+        if "วิเคราะห์บอล" in line:
+            continue
+        if len(line) > 40:
+            continue
+        if re.search(r"[0-9]", line):
+            continue
+        if any(mark in line for mark in [":", "(", ")", ",", "http", "www."]):
+            continue
+        team_candidates.append(line)
+
+    teams: list[str] = []
+    for name in team_candidates:
+        if name not in teams:
+            teams.append(name)
+        if len(teams) >= 2:
+            break
+
     all_images: list[str] = []
     for img in article.find_all("img"):
         src = img.get("src")
@@ -198,6 +218,7 @@ def _extract_analysis_detail(article_url: str) -> dict[str, Any]:
     return {
         "content": "\n".join(deduped_lines),
         "team_icons": team_icons[:2],
+        "teams": teams,
     }
 
 
@@ -221,6 +242,7 @@ def _parse_analysis_articles(soup: BeautifulSoup) -> list[dict[str, Any]]:
                 "title": title,
                 "content": detail["content"],
                 "team_icons": detail["team_icons"],
+                "teams": detail["teams"],
             }
         )
     return records
