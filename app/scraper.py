@@ -1,5 +1,7 @@
+import base64
 import re
 from datetime import datetime
+from functools import lru_cache
 from typing import Any, Optional, Tuple
 from zoneinfo import ZoneInfo
 
@@ -175,6 +177,30 @@ def _is_correct_row(row: Optional[Tag]) -> bool:
     return any(mark in row_text for mark in ["✓", "✔", "☑"])
 
 
+@lru_cache(maxsize=512)
+def _normalize_team_icon_url(icon_url: str) -> str:
+    # polball images can be hotlink-protected and rendered with watermark/overlay.
+    # Embed bytes as data URI so clients always receive the same clean icon.
+    if "polball.club" not in icon_url.lower():
+        return icon_url
+    try:
+        response = requests.get(icon_url, timeout=20)
+        response.raise_for_status()
+    except requests.RequestException:
+        return icon_url
+
+    content_type = (
+        (response.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+    )
+    if not content_type.startswith("image/"):
+        return icon_url
+    if len(response.content) > 500_000:
+        return icon_url
+
+    encoded = base64.b64encode(response.content).decode("ascii")
+    return f"data:{content_type};base64,{encoded}"
+
+
 def _extract_analysis_detail(article_url: str) -> dict[str, Any]:
     response = requests.get(article_url, timeout=30)
     response.raise_for_status()
@@ -226,6 +252,11 @@ def _extract_analysis_detail(article_url: str) -> dict[str, Any]:
         src = img.get("src")
         if not src:
             continue
+        src_url = requests.compat.urljoin(article_url, src)
+        lower_src = src_url.lower()
+        # Skip league/division badges; keep only team logos.
+        if "/images/division/" in lower_src:
+            continue
         css_classes = img.get("class", [])
         width = img.get("width", "")
         height = img.get("height", "")
@@ -235,7 +266,7 @@ def _extract_analysis_detail(article_url: str) -> dict[str, Any]:
         is_medium_wp = "size-medium" in css_classes
         if is_large or is_medium_wp:
             continue
-        team_icons.append(requests.compat.urljoin(article_url, src))
+        team_icons.append(_normalize_team_icon_url(src_url))
 
     return {
         "content": "\n".join(deduped_lines),
