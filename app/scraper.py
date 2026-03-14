@@ -1,8 +1,8 @@
-import base64
 import re
 from datetime import datetime
 from functools import lru_cache
 from typing import Any, Optional, Tuple
+from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
 import requests
@@ -179,26 +179,8 @@ def _is_correct_row(row: Optional[Tag]) -> bool:
 
 @lru_cache(maxsize=512)
 def _normalize_team_icon_url(icon_url: str) -> str:
-    # polball images can be hotlink-protected and rendered with watermark/overlay.
-    # Embed bytes as data URI so clients always receive the same clean icon.
-    if "polball.club" not in icon_url.lower():
-        return icon_url
-    try:
-        response = requests.get(icon_url, timeout=20)
-        response.raise_for_status()
-    except requests.RequestException:
-        return icon_url
-
-    content_type = (
-        (response.headers.get("Content-Type") or "").split(";")[0].strip().lower()
-    )
-    if not content_type.startswith("image/"):
-        return icon_url
-    if len(response.content) > 500_000:
-        return icon_url
-
-    encoded = base64.b64encode(response.content).decode("ascii")
-    return f"data:{content_type};base64,{encoded}"
+    # Return app-hosted proxy path so client can always load icons over HTTP(S).
+    return f"/api/v1/gudoball/icon?url={quote(icon_url, safe='')}"
 
 
 def _extract_analysis_detail(article_url: str) -> dict[str, Any]:
