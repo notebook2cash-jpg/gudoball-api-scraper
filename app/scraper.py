@@ -268,10 +268,23 @@ def _extract_analysis_detail(article_url: str) -> dict[str, Any]:
             continue
         team_icons.append(_normalize_team_icon_url(src_url))
 
+    tip: str = ""
+    predicted_score: str = ""
+    for line in deduped_lines:
+        if not tip and line.startswith("ชี้เปรี้ยง วาง "):
+            tip = line.removeprefix("ชี้เปรี้ยง วาง ").strip()
+        if not predicted_score:
+            for prefix in ("ผ ลสกอร์ ", "ผลสกอร์ "):
+                if line.startswith(prefix):
+                    predicted_score = line.removeprefix(prefix).strip()
+                    break
+
     return {
         "content": "\n".join(deduped_lines),
         "team_icons": team_icons[:2],
         "teams": teams,
+        "tip": tip,
+        "predicted_score": predicted_score,
     }
 
 
@@ -296,6 +309,8 @@ def _parse_analysis_articles(soup: BeautifulSoup) -> list[dict[str, Any]]:
                 "content": detail["content"],
                 "team_icons": detail["team_icons"],
                 "teams": detail["teams"],
+                "tip": detail["tip"],
+                "predicted_score": detail["predicted_score"],
             }
         )
     return records
