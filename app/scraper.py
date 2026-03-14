@@ -221,22 +221,21 @@ def _extract_analysis_detail(article_url: str) -> dict[str, Any]:
         if len(teams) >= 2:
             break
 
-    all_images: list[str] = []
+    team_icons: list[str] = []
     for img in article.find_all("img"):
         src = img.get("src")
         if not src:
             continue
-        all_images.append(requests.compat.urljoin(article_url, src))
-
-    team_icons = [
-        img
-        for img in all_images
-        if "uefa" not in img.lower()
-        and "champions_league" not in img.lower()
-        and "premier-league" not in img.lower()
-    ]
-    if len(team_icons) < 2:
-        team_icons = all_images
+        css_classes = img.get("class", [])
+        width = img.get("width", "")
+        height = img.get("height", "")
+        is_large = (width.isdigit() and int(width) > 150) or (
+            height.isdigit() and int(height) > 150
+        )
+        is_medium_wp = "size-medium" in css_classes
+        if is_large or is_medium_wp:
+            continue
+        team_icons.append(requests.compat.urljoin(article_url, src))
 
     return {
         "content": "\n".join(deduped_lines),
