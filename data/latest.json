@@ -1,6 +1,6 @@
 {
   "source": "https://www.gudoball.club/",
-  "scraped_at": "2026-04-14T13:21:34.463363+07:00",
+  "scraped_at": "2026-04-14T17:39:26.850472+07:00",
   "sections": {
     "section_1_analysis_today": [
       {
@@ -38,25 +38,25 @@
         "rows": [
           {
             "ประเภท": "สเต็ป",
-            "Perzeus": "-",
+            "Perzeus": "พอร์ทสมัธ",
             "ก๊งฉิ่ม": "ปารีส แซงต์ แชร์กแมง",
             "is_correct": false
           },
           {
             "ประเภท": "สเต็ป",
-            "Perzeus": "-",
+            "Perzeus": "โบลตัน วอนเดอเรอส์",
             "ก๊งฉิ่ม": "เซาแธมป์ตัน",
             "is_correct": false
           },
           {
             "ประเภท": "สเต็ป",
-            "Perzeus": "-",
+            "Perzeus": "จิปโป",
             "ก๊งฉิ่ม": "วีแกน แอธเลติก",
             "is_correct": false
           },
           {
             "ประเภท": "เต็ง",
-            "Perzeus": "-",
+            "Perzeus": "ลิเวอร์พูล",
             "ก๊งฉิ่ม": "บาร์เซโลน่า",
             "is_correct": false
           }
