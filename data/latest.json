@@ -1,6 +1,6 @@
 {
   "source": "https://www.gudoball.club/",
-  "scraped_at": "2026-05-15T14:45:03.350213+07:00",
+  "scraped_at": "2026-05-15T18:28:36.514255+07:00",
   "sections": {
     "section_1_analysis_today": [
       {
@@ -24,25 +24,25 @@
         "rows": [
           {
             "ประเภท": "สเต็ป",
-            "Perzeus": "-",
+            "Perzeus": "เคย์เคอร์ ริเซสปอร์",
             "ก๊งฉิ่ม": "ลิเวอร์พูล",
             "is_correct": false
           },
           {
             "ประเภท": "สเต็ป",
-            "Perzeus": "-",
+            "Perzeus": "ซอลฟอร์ด ซิตี้",
             "ก๊งฉิ่ม": "แชมร็อค โรเวอร์",
             "is_correct": false
           },
           {
             "ประเภท": "สเต็ป",
-            "Perzeus": "-",
+            "Perzeus": "ไลซอส",
             "ก๊งฉิ่ม": "แพททริค ทริสเทล",
             "is_correct": false
           },
           {
             "ประเภท": "เต็ง",
-            "Perzeus": "-",
+            "Perzeus": "ลิเวอร์พูล",
             "ก๊งฉิ่ม": "โบฮีเมี่ยนส์",
             "is_correct": false
           }
