@@ -1,6 +1,6 @@
 {
   "source": "https://www.gudoball.club/",
-  "scraped_at": "2026-09-08T16:06:44.967830+07:00",
+  "scraped_at": "2026-09-08T20:33:20.113165+07:00",
   "sections": {
     "section_1_analysis_today": [],
     "section_2_tips_combo": {
@@ -9,25 +9,25 @@
         "rows": [
           {
             "ประเภท": "สเต็ป",
-            "Perzeus": "-",
+            "Perzeus": "เลย์ตัน โอเรียนท์",
             "ก๊งฉิ่ม": "นิวคาสเซิ่ล",
             "is_correct": false
           },
           {
             "ประเภท": "สเต็ป",
-            "Perzeus": "-",
+            "Perzeus": "ปอร์โต้",
             "ก๊งฉิ่ม": "เอ็กเซลซิเออร์",
             "is_correct": false
           },
           {
             "ประเภท": "สเต็ป",
-            "Perzeus": "-",
+            "Perzeus": "เออีเค เอเธนส์",
             "ก๊งฉิ่ม": "วัตฟอร์ด",
             "is_correct": false
           },
           {
             "ประเภท": "เต็ง",
-            "Perzeus": "-",
+            "Perzeus": "เรอัล มาดริด",
             "ก๊งฉิ่ม": "แมนฯ ซิตี้",
             "is_correct": false
           }
