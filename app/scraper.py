@@ -270,31 +270,67 @@ def _extract_analysis_detail(article_url: str) -> dict[str, Any]:
     }
 
 
-def _parse_analysis_articles(soup: BeautifulSoup) -> list[dict[str, Any]]:
-    records: list[dict[str, Any]] = []
-    seen_titles: set[str] = set()
+def _analysis_article_links(soup: BeautifulSoup) -> list[tuple[str, str]]:
+    """Collect (title, url) pairs for per-match analysis articles in a page.
+
+    Real match-analysis titles look like
+    "วิเคราะห์บอล พรีเมียร์ลีก อังกฤษ เชลซี -vs- แมนฯยู 31/10/2026".
+    The home-vs-away separator the site uses is "-vs-" (older pages used
+    " vs "); plain menu links ("วิเคราะห์บอล", "วิเคราะห์บอลวันนี้") have neither.
+    """
+    out: list[tuple[str, str]] = []
+    seen: set[str] = set()
     for link in soup.find_all("a", href=True):
         title = _clean_text(link.get_text(" ", strip=True))
         if not title.startswith("วิเคราะห์บอล"):
             continue
-        # Keep only real match analysis titles, skip menu links like "วิเคราะห์บอล".
-        if " vs " not in title or len(title) < 25:
+        if "-vs-" not in title and " vs " not in title:
             continue
-        if title in seen_titles:
+        if len(title) < 25 or title in seen:
             continue
-        seen_titles.add(title)
-        article_url = requests.compat.urljoin(SOURCE_URL, link["href"])
-        detail = _extract_analysis_detail(article_url)
-        records.append(
-            {
-                "title": title,
-                "content": detail["content"],
-                "team_icons": detail["team_icons"],
-                "teams": detail["teams"],
-                "tip": detail["tip"],
-                "predicted_score": detail["predicted_score"],
-            }
-        )
+        seen.add(title)
+        out.append((title, requests.compat.urljoin(SOURCE_URL, link["href"])))
+    return out
+
+
+def _parse_analysis_articles(soup: BeautifulSoup) -> list[dict[str, Any]]:
+    # Per-match analysis articles live on the "วิเคราะห์บอลวันนี้ คืนนี้"
+    # sub-page, not the homepage. Discover and fetch that page first, then fall
+    # back to the homepage so older layouts keep working.
+    pages: list[BeautifulSoup] = []
+    sub_url: Optional[str] = None
+    for link in soup.find_all("a", href=True):
+        text = _clean_text(link.get_text(" ", strip=True))
+        if text.startswith("วิเคราะห์บอลวันนี้"):
+            sub_url = requests.compat.urljoin(SOURCE_URL, link["href"])
+            break
+    if sub_url:
+        try:
+            resp = requests.get(sub_url, timeout=30)
+            resp.raise_for_status()
+            pages.append(BeautifulSoup(resp.text, "html.parser"))
+        except requests.RequestException:
+            pass
+    pages.append(soup)  # homepage fallback
+
+    records: list[dict[str, Any]] = []
+    seen_titles: set[str] = set()
+    for page in pages:
+        for title, article_url in _analysis_article_links(page):
+            if title in seen_titles:
+                continue
+            seen_titles.add(title)
+            detail = _extract_analysis_detail(article_url)
+            records.append(
+                {
+                    "title": title,
+                    "content": detail.get("content", ""),
+                    "team_icons": detail.get("team_icons", []),
+                    "teams": detail.get("teams", []),
+                    "tip": detail.get("tip", ""),
+                    "predicted_score": detail.get("predicted_score", ""),
+                }
+            )
     return records
 
 
