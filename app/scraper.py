@@ -183,6 +183,20 @@ def _normalize_team_icon_url(icon_url: str) -> str:
     return f"/api/v1/gudoball/icon?url={quote(icon_url, safe='')}"
 
 
+# Promotional / gambling-ad lines the source injects into article bodies.
+# The site splits words with spaces ("ค ลิ๊กเลย", "bit.l-y", "ผ ลสกอร์") to dodge
+# filters, so match against a space-stripped, lowercased copy of the line.
+_AD_SUBSTRINGS = ("88call", "คลิ๊กเลย", "byperzeus")
+_AD_REGEX = re.compile(r"bit\.?l-?y", re.IGNORECASE)
+
+
+def _is_ad_line(line: str) -> bool:
+    compact = re.sub(r"\s+", "", line).lower()
+    if _AD_REGEX.search(compact):
+        return True
+    return any(sub in compact for sub in _AD_SUBSTRINGS)
+
+
 def _extract_analysis_detail(article_url: str) -> dict[str, Any]:
     response = requests.get(article_url, timeout=30)
     response.raise_for_status()
@@ -197,6 +211,8 @@ def _extract_analysis_detail(article_url: str) -> dict[str, Any]:
     for node in article.find_all(["h2", "h3", "h4", "p", "li"]):
         text = _clean_text(node.get_text(" ", strip=True))
         if not text:
+            continue
+        if _is_ad_line(text):
             continue
         content_lines.append(text)
 
