@@ -1,6 +1,6 @@
 {
   "source": "https://www.gudoball.club/",
-  "scraped_at": "2026-11-23T15:00:34.406675+07:00",
+  "scraped_at": "2026-11-23T16:00:32.555761+07:00",
   "sections": {
     "section_1_analysis_today": [
       {
@@ -296,25 +296,25 @@
         "rows": [
           {
             "ประเภท": "สเต็ป",
-            "Perzeus": "-",
+            "Perzeus": "อิสตันบูล บูยูคเซ็ค",
             "ก๊งฉิ่ม": "ฟิออเรนติน่า",
             "is_correct": false
           },
           {
             "ประเภท": "สเต็ป",
-            "Perzeus": "-",
+            "Perzeus": "น็องต์",
             "ก๊งฉิ่ม": "เอฟเวอร์ตัน",
             "is_correct": false
           },
           {
             "ประเภท": "สเต็ป",
-            "Perzeus": "-",
+            "Perzeus": "ฟิออเรนติน่า",
             "ก๊งฉิ่ม": "เอลเช่",
             "is_correct": false
           },
           {
             "ประเภท": "เต็ง",
-            "Perzeus": "-",
+            "Perzeus": "เลบานเต้",
             "ก๊งฉิ่ม": "ฮัมมาร์บี้",
             "is_correct": false
           }
